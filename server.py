@@ -1,7 +1,8 @@
 import asyncio
 import websockets
+import os
 
-PORT = 8765
+PORT = int(os.environ.get("PORT", 8765))
 clients = set()
 
 async def handler(websocket):
@@ -19,7 +20,7 @@ async def handler(websocket):
         print("Cliente desconectado")
 
 async def main():
-    print("Servidor WebSocket listo")
+    print("Servidor WebSocket listo en puerto", PORT)
     async with websockets.serve(handler, "0.0.0.0", PORT):
         await asyncio.Future()
 
