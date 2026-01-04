@@ -1,27 +1,26 @@
 import asyncio
 import websockets
-import pyaudio
 
-RATE = 48000
-CHANNELS = 1
-FORMAT = pyaudio.paInt16
+PORT = 8765
+clients = set()
 
-p = pyaudio.PyAudio()
-stream = p.open(
-    format=FORMAT,
-    channels=CHANNELS,
-    rate=RATE,
-    output=True
-)
-
-async def handler(ws):
-    print("ESP32 conectada")
-    async for data in ws:
-        stream.write(data)
+async def handler(websocket):
+    print("Cliente conectado")
+    clients.add(websocket)
+    try:
+        async for message in websocket:
+            for c in clients:
+                if c != websocket:
+                    await c.send(message)
+    except:
+        pass
+    finally:
+        clients.remove(websocket)
+        print("Cliente desconectado")
 
 async def main():
-    async with websockets.serve(handler, "0.0.0.0", 8080):
-        print("Servidor WebSocket listo")
+    print("Servidor WebSocket listo")
+    async with websockets.serve(handler, "0.0.0.0", PORT):
         await asyncio.Future()
 
 asyncio.run(main())
