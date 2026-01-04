@@ -5,11 +5,11 @@ PORT = 8765
 clients = set()
 
 async def handler(websocket):
-    print("Cliente conectado")
+    print("Cliente WS conectado")
     clients.add(websocket)
     try:
         async for message in websocket:
-            print("Datos recibidos:", len(message), "bytes")
+            print("Bytes recibidos:", len(message))
             for c in clients:
                 if c != websocket:
                     await c.send(message)
@@ -17,7 +17,7 @@ async def handler(websocket):
         print("Error:", e)
     finally:
         clients.remove(websocket)
-        print("Cliente desconectado")
+        print("Cliente WS desconectado")
 
 async def main():
     print("Servidor WebSocket listo")
