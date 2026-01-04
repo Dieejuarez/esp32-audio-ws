@@ -1,26 +1,40 @@
 import asyncio
 import websockets
+import os
+from aiohttp import web
 
-PORT = 8765
-clients = set()
+PORT = int(os.environ.get("PORT", 8080))
+ws_clients = set()
 
-async def handler(ws):
-    print("Cliente conectado")
-    clients.add(ws)
-    try:
-        async for msg in ws:
-            for c in clients:
-                if c != ws:
-                    await c.send(msg)
-    except:
+# ---------- WEBSOCKET ----------
+async def ws_handler(request):
+    ws = web.WebSocketResponse()
+    await ws.prepare(request)
+
+    ws_clients.add(ws)
+    print("WebSocket conectado")
+
+    async for msg in ws:
         pass
-    finally:
-        clients.remove(ws)
-        print("Cliente desconectado")
 
-async def main():
-    print("Servidor WS listo en puerto", PORT)
-    async with websockets.serve(handler, "0.0.0.0", PORT):
-        await asyncio.Future()
+    ws_clients.remove(ws)
+    print("WebSocket desconectado")
+    return ws
 
-asyncio.run(main())
+# ---------- HTTP AUDIO ----------
+async def audio_handler(request):
+    data = await request.read()
+
+    for ws in ws_clients:
+        if not ws.closed:
+            await ws.send_bytes(data)
+
+    return web.Response(text="OK")
+
+# ---------- MAIN ----------
+app = web.Application()
+app.router.add_get("/", ws_handler)
+app.router.add_post("/audio", audio_handler)
+
+print("Servidor HTTP+WS listo")
+web.run_app(app, port=PORT)
